@@ -1,9 +1,19 @@
-import Image from "next/image";
+import { caller } from '@/trpc/server';
 
-export default function Home() {
+import {
+  
+  dehydrate,
+  HydrationBoundary
+} from '@tanstack/react-query'
+import { trpc } from '@/trpc/server';
+import { getQueryClient} from '@/trpc/server';
+import { ClientGreeting } from './client-greeting';
+export default async function Home() {
+  const queryClient = getQueryClient();
+  const greeting = await queryClient.fetchQuery(trpc.hello.queryOptions({ text: 'client' }));
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      test
-    </div>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ClientGreeting />
+    </HydrationBoundary>
   );
 }
