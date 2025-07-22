@@ -1,14 +1,17 @@
-import { createAgent,gemini } from "@inngest/agent-kit";
-
-export const SupportAgent = createAgent({
-  model: gemini({ model: "gemini-1.5-flash" }),
-  name: "Customer support specialist",
-  system: "You are an customer support specialist..."
-});
+import { AgentResult, TextMessage } from "@inngest/agent-kit";
 
 
-export const codeAgent = createAgent({
-  model: gemini({ model: "gemini-1.5-flash" }),
-  name: "Code Agent",
-  system: "You are an expert next js developer"
-});
+
+
+export const lastMessage =(result : AgentResult)=>{
+const messageIndex = result.output.findLastIndex(
+  (message)=>message.role === 'assistant'
+)
+
+if(messageIndex === -1){
+  return null
+}
+
+const message= result.output[messageIndex] as TextMessage | undefined
+  return message?.content ? typeof message.content ==='string'? message.content : message.content.map(b=>b.text).join(''):undefined
+}
