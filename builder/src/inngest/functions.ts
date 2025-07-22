@@ -1,16 +1,29 @@
-import {  SupportAgent } from "@/agents/ai";
+import {  codeAgent, SupportAgent } from "@/agents/ai";
+import {Sandbox} from '@e2b/code-interpreter'
 import { inngest } from "./client";
+import { getSandbox } from "@/lib/sandbox";
 
 export const helloWorld = inngest.createFunction(
   { id: "hello-world" },
   { event: "test/hello.world" },
   async ({ event, step }) => {
-    await step.sleep("wait-a-moment", "1s");
-    const result = await SupportAgent.run(
-        "You are a customer support agent. You are given a question and you need to answer it.",
-        event.data.question,
-      );
-      console.log(result);
-      return { message: result.output };
-  },
+    const sandboxId = await step.run("get-sandbox-id", async () => {
+      const sandbox = await Sandbox.create("lov-clone")
+      return sandbox.sandboxId;
+    });
+
+    const {output}= await codeAgent.run(
+      'hello'
+    )
+
+    const sandbox_url = await step.run('get-sandbox-url',async()=>{
+      const sandbox = await getSandbox(sandboxId)
+      const host= sandbox.getHost(3000)
+      return `https://${host}`
+
+    })
+
+    return {output,sandbox_url}
+    
+  }
 );
