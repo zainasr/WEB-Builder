@@ -1,9 +1,18 @@
 'use client';
 import { useTRPC } from '@/trpc/client';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 
 export function ClientGreeting() {
   const trpc = useTRPC();
-  const { data } = useSuspenseQuery(trpc.hello.queryOptions({ text: 'client' }));
-  return <div>{data.greeting}</div>;
+  const { mutate } = useMutation(trpc.messages.create.mutationOptions({
+    onSuccess: (data) => {
+      console.log(data);
+    },
+  }));
+  return (
+    <>
+      <input type="text" />
+      <button onClick={() => mutate({ content: 'Hello, world!' })}>Send</button>
+    </>
+  );
 }
