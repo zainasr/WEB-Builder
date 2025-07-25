@@ -1,35 +1,48 @@
 import { baseProcedure, createTRPCRouter,  } from "@/trpc/init";
 import z from "zod";
-import { MessageRole, MessageType, PrismaClient } from "../../generated/prisma";
+import {  PrismaClient } from "../../generated/prisma";
 import { inngest } from "@/inngest/client";
 
 const prisma = new PrismaClient();
 
 export const messagesRouter = createTRPCRouter({
   create: baseProcedure.input(z.object({
-    content: z.string(),
+    userMessage: z.string().min(1, "Message is required").max(1000, "Message must be less than 1000 characters"),
+    projectId: z.string(),
   })).mutation(async ({  input }) => {
+   
     const message = await prisma.message.create({
-      data: {
-        content: input.content,
+      data:{
+        content:input.userMessage,
         role:"USER",
-        type:"RESULT"
-      },
+        type:"RESULT",
+        projectId:input.projectId
+      }
     })
 
     await inngest.send({
       name: "code-agent/run",
       data: {
-        value:input.content
+        value:input.userMessage,
+        projectId:input.projectId
       },
     })
 
     return message;
+
   }),
-  getMany: baseProcedure.query(async () => {
+  getMany: baseProcedure.input(z.object({
+    projectId: z.string().min(1, "Project ID is required"),
+  })).query(async ({ input }) => {
     const messages = await prisma.message.findMany({
+      where:{
+        projectId:input.projectId
+      },
+      include:{
+        fragment:true
+      },
       orderBy: {
-        createdAt: "desc",
+        createdAt: "asc",
       },
     });
     return messages;

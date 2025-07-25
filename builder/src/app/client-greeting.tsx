@@ -12,7 +12,6 @@ export function ClientGreeting() {
   return (
     <>
       <input type="text" />
-      <button onClick={() => mutate({ content: 'Hello, world!' })}>Send</button>
     </>
   );
 }
