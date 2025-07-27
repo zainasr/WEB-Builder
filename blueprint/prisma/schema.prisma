@@ -1,0 +1,378 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE USER MANAGEMENT
+// ============================================================================
+
+// User table - Core authentication and user management
+// Examples: john@example.com (CUSTOMER), admin@store.com (ADMIN)
+// Used for: Login, order tracking, admin permissions, customer profiles
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique // Clerk authentication ID
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  phone     String?
+  role      UserRole @default(CUSTOMER)
+  
+  
+  // Stripe integration
+  stripeCustomerId String? @unique // Stripe customer ID for payments
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 1:Many Relationships
+  orders    Order[]    // One user can have many orders
+  addresses Address[]  // One user can have many shipping addresses
+  cartItems Cart[]     // One user can have many cart items
+  
+  @@map("users")
+}
+
+enum UserRole {
+  CUSTOMER // Regular shoppers
+  ADMIN    // Store administrators
+}
+
+// ============================================================================
+// PRODUCT CATALOG SYSTEM
+// ============================================================================
+
+// Category table - Product organization and navigation
+// Examples: "Electronics", "Clothing > Men's > Shirts", "Sports > Running Shoes"
+// Used for: Navigation menus, filtering, SEO-friendly URLs
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique // "Electronics", "Men's Clothing"
+  slug        String  @unique // "electronics", "mens-clothing"
+  description String?
+  image       String? // Category banner image
+  isActive    Boolean @default(true)
+  
+  // Self-referencing for nested categories
+  parentId String?
+  parent   Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 1:Many Relationships
+  products Product[] // One category can have many products
+  
+  @@map("categories")
+}
+
+// Product table - Main product information
+// Examples: "Nike Air Max 90", "iPhone 15 Pro", "Vintage Denim Jacket"
+// Used for: Product listings, search, base pricing, descriptions
+model Product {
+  id          String   @id @default(cuid())
+  name        String   // "Nike Air Max 90"
+  slug        String   @unique // "nike-air-max-90"
+  description String?  // Product details, features, materials
+  basePrice   Int      // Price in cents (e.g., 9999 = $99.99)
+  images      String[] // Array of image URLs
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false) // For homepage/promotion display
+  
+  // SEO fields
+  metaTitle       String?
+  metaDescription String?
+  
+  // Inventory
+  stockQuantity Int @default(0) // Total stock across all variants
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Many:1 Relationships
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  
+  // 1:Many Relationships
+  variants   ProductVariant[] // One product can have many variants (sizes, colors)
+  orderItems OrderItem[]      // One product can be in many orders
+  cartItems  Cart[]           // One product can be in many carts
+  
+  @@map("products")
+}
+
+// ProductVariant table - Product variations (size, color, material, etc.)
+// Examples: "Nike Air Max 90 - Size 10 Red", "iPhone 15 Pro - 256GB Space Black"
+// Used for: Different sizes, colors, materials with specific pricing and stock
+model ProductVariant {
+  id          String  @id @default(cuid())
+  name        String  // "Size 10 - Red", "256GB - Space Black"
+  stock       Int     @default(0) // Individual variant stock
+  isActive    Boolean @default(true)
+  
+  // Variant attributes stored as JSON
+  // Examples: {"size": "10", "color": "Red"} or {"storage": "256GB", "color": "Space Black"}
+  attributes Json? // Flexible attributes for any product type
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Many:1 Relationships
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  // 1:Many Relationships
+  orderItems OrderItem[] // One variant can be in many orders
+  cartItems  Cart[]      // One variant can be in many carts
+  
+  @@map("product_variants")
+}
+
+// ============================================================================
+// USER ADDRESSES
+// ============================================================================
+
+// Address table - User shipping and billing addresses
+// Examples: Home address, work address, gift delivery address
+// Used for: Shipping, billing, multiple delivery locations per user
+model Address {
+  id        String  @id @default(cuid())
+  firstName String
+  lastName  String
+  company   String?
+  street    String  // "123 Main Street, Apt 4B"
+  city      String  // "New York"
+  state     String  // "NY"
+  zipCode   String  // "10001"
+  country   String  @default("US")
+  phone     String?
+  isDefault Boolean @default(false) // User's default shipping address
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Many:1 Relationships
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // 1:Many Relationships
+  orders Order[] // One address can be used for many orders
+  
+  @@map("addresses")
+}
+
+// ============================================================================
+// SHOPPING CART SYSTEM
+// ============================================================================
+
+// Cart table - Persistent shopping cart items
+// Examples: User adds "Nike Shoes Size 10" with quantity 2 to cart
+// Used for: Cross-device cart persistence, abandoned cart recovery
+model Cart {
+  id       String @id @default(cuid())
+  quantity Int    @default(1)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Many:1 Relationships
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  
+  // Ensure one cart item per user-product-variant combination
+  @@unique([userId, productId, variantId])
+  @@map("cart")
+}
+
+// ============================================================================
+// DISCOUNT SYSTEM
+// ============================================================================
+
+// Coupon table - Discount codes and promotions
+// Examples: "SAVE20" (20% off), "WELCOME10" ($10 off), "FREESHIP" (free shipping)
+// Used for: Marketing campaigns, customer acquisition, retention
+model Coupon {
+  id            String      @id @default(cuid())
+  code          String      @unique // "SAVE20", "WELCOME10"
+  discountType  DiscountType // PERCENTAGE or FIXED_AMOUNT
+  discountValue Int         // 20 (for 20%) or 1000 (for $10.00 in cents)
+  
+  // Usage limits
+  maxUses       Int?        // Total times coupon can be used
+  usedCount     Int         @default(0) // Times already used
+  maxUsesPerUser Int?       // Per-user limit
+  
+  // Validity period
+  validFrom     DateTime
+  validTo       DateTime?
+  
+  // Conditions
+  minimumAmount Int?        // Minimum order amount in cents
+  isActive      Boolean     @default(true)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 1:Many Relationships
+  orders Order[] // One coupon can be used in many orders
+  
+  @@map("coupons")
+}
+
+enum DiscountType {
+  PERCENTAGE   // 20% off
+  FIXED_AMOUNT // $10 off
+}
+
+// ============================================================================
+// ORDER MANAGEMENT SYSTEM
+// ============================================================================
+
+// Order table - Customer purchase records
+// Examples: Order #12345 from john@example.com for $150.00
+// Used for: Transaction history, fulfillment, customer service, analytics
+model Order {
+  id             String      @id @default(cuid())
+  orderNumber    String      @unique @default(cuid()) // Human-readable order number
+  status         OrderStatus @default(PENDING)
+  
+  // Pricing (all in cents)
+  subtotal       Int         // Sum of all items before discounts/shipping
+  discount       Int         @default(0) // Discount amount applied
+  shippingCost   Int         @default(0) // Shipping fee
+  tax            Int         @default(0) // Tax amount
+  total          Int         // Final amount charged
+  
+  // Customer notes
+  notes          String?     // Special delivery instructions
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Many:1 Relationships
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  shippingAddressId String
+  shippingAddress   Address @relation(fields: [shippingAddressId], references: [id])
+  couponId    String?
+  coupon      Coupon?  @relation(fields: [couponId], references: [id])
+  
+  // 1:Many Relationships
+  orderItems OrderItem[] // One order can have many items
+  payment    Payment?    // One order has one payment record
+  
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING    // Order placed, payment pending
+  CONFIRMED  // Payment confirmed, processing
+  SHIPPED    // Order shipped to customer
+  DELIVERED  // Order delivered successfully
+  CANCELLED  // Order cancelled
+  REFUNDED   // Order refunded
+}
+
+// OrderItem table - Individual items within an order
+// Examples: 2x "Nike Shoes Size 10" at $99.99 each in Order #12345
+// Used for: Order details, historical pricing, fulfillment tracking
+model OrderItem {
+  id          String @id @default(cuid())
+  quantity    Int
+  priceAtTime Int    // Price per item when ordered (historical record)
+  total       Int    // quantity * priceAtTime
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  // Many:1 Relationships
+  orderId   String
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product        @relation(fields: [productId], references: [id])
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  
+  @@map("order_items")
+}
+
+// ============================================================================
+// PAYMENT SYSTEM (STRIPE INTEGRATION)
+// ============================================================================
+
+// Payment table - Stripe payment records and transaction details
+// Examples: Successful $150.00 payment via card ending in 4242
+// Used for: Payment tracking, refunds, financial reporting, Stripe webhooks
+model Payment {
+  id                     String        @id @default(cuid())
+  stripePaymentIntentId  String        @unique // Stripe Payment Intent ID
+  stripeChargeId         String?       @unique // Stripe Charge ID
+  amount                 Int           // Amount in cents
+  currency               String        @default("usd")
+  status                 PaymentStatus
+  
+  // Payment method details (from Stripe)
+  paymentMethodType      String?       // "card", "apple_pay", etc.
+  last4                  String?       // Last 4 digits of card
+  brand                  String?       // "visa", "mastercard", etc.
+  
+  // Stripe webhook data
+  stripeWebhookData      Json?         // Raw Stripe webhook payload
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 1:1 Relationships
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING    // Payment initiated
+  SUCCEEDED  // Payment successful
+  FAILED     // Payment failed
+  CANCELLED  // Payment cancelled
+  REFUNDED   // Payment refunded
+}
+
+// ============================================================================
+// INDEXES FOR PERFORMANCE
+// ============================================================================
+
+// Additional indexes for common queries (add these as needed)
+// @@index([categoryId]) on Product
+// @@index([userId, createdAt]) on Order
+// @@index([status]) on Order
+// @@index([isActive]) on Product
+// @@index([validFrom, validTo]) on Coupon
+
+
+
