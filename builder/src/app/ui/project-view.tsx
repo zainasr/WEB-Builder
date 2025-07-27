@@ -1,4 +1,4 @@
-
+'use client'
 import { ResizablePanel, ResizablePanelGroup, ResizableHandle } from "@/components/ui/resizable";
 import { MessagesContainer } from "./components/messages-container";
 import { Suspense, useState } from "react";
