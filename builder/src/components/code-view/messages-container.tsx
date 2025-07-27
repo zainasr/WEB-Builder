@@ -1,10 +1,10 @@
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { MessageCard } from "./message-card";
-import { MessageForm } from "./message-form";
 import { Suspense, useEffect, useRef } from "react";
 import { Fragment } from "@/generated/prisma";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MessageCard } from "./message-card";
+import { MessageForm } from "./message-form";
 
 interface Props {
   projectId: string;
