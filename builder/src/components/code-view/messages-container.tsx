@@ -15,6 +15,7 @@ interface Props {
 export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment   }: Props) => {
   const trpc = useTRPC();
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastAssistantMessageRef=useRef<string | null>(null);
   const { data: messages } = useSuspenseQuery(trpc.messages.getMany.queryOptions({
     projectId: projectId
     
@@ -24,11 +25,11 @@ export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment
 }
 ));
   useEffect(()=>{
-   const lastAssistantMessageWithFragment=messages.findLast((message)=>message.role==="ASSISTANT" &&  !!message.fragment)
-   if(lastAssistantMessageWithFragment){
-    setActiveFragment(lastAssistantMessageWithFragment.fragment)
-   }
-
+    const lastAssistantMessageWithFragment=messages.findLast((message)=>message.role==="ASSISTANT" &&  !!message.fragment)
+    if (lastAssistantMessageWithFragment && lastAssistantMessageWithFragment.id!==lastAssistantMessageRef.current){
+      setActiveFragment(lastAssistantMessageWithFragment.fragment)
+      lastAssistantMessageRef.current=lastAssistantMessageWithFragment.id
+    }
   },[messages,setActiveFragment])
 
   useEffect(() => {
