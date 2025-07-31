@@ -24,9 +24,9 @@ export const codeAgentFunction = inngest.createFunction(
   { event: "code-agent/run" },
   async ({ event, step }) => {
     const sandboxId = await step.run("get-sandbox-id", async () => {
-      const sandbox = await Sandbox.create("lov-clone",{
-        timeoutMs:100000
-      })
+      const sandbox = await Sandbox.create("lov-clone",
+      )
+      await sandbox.setTimeout(60000 * 10 * 3)
       return sandbox.sandboxId;
     });
 
@@ -38,8 +38,9 @@ export const codeAgentFunction = inngest.createFunction(
           projectId:event.data.projectId
         },
         orderBy:{
-          createdAt:"asc"
-        }
+          createdAt:"desc"
+        },
+        take:8
       })
       for(const message of messages){
         Formattedmessages.push({
@@ -48,7 +49,7 @@ export const codeAgentFunction = inngest.createFunction(
           content:message.content   
         })
         }
-        return Formattedmessages
+        return Formattedmessages.reverse()
     })
 
     const state = createState<CodeAgentState>({

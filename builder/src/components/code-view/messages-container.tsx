@@ -21,7 +21,7 @@ export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment
     
   }
 ,{
-  refetchInterval: 5000,
+  refetchInterval: 2000,
 }
 ));
   useEffect(()=>{
