@@ -63,7 +63,7 @@ export const codeAgentFunction = inngest.createFunction(
   )
 
     const codeAgent = createAgent<CodeAgentState>({
-      model: openai({ model: "gpt-4o", apiKey: "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" }),
+      model: openai({ model: "gpt-4o" }),
       name: "Code Agent",
       system: PROMPT,
       
