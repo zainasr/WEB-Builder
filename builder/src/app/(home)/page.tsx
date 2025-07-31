@@ -20,7 +20,7 @@ export default async function Home() {
               <ProjectForm />
             </Suspense>
           </div>
-          <ProjectList/>
+          {/* <ProjectList/> */}
         </div>
       </section>
     </div>
