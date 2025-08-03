@@ -11,6 +11,7 @@ import Link from "next/link";
 import { FileExplorer } from "./file-explorer";
 import { MessagesContainer } from "./messages-container";
 import { ErrorBoundary } from "react-error-boundary";
+import { UserButton } from "@clerk/nextjs";
 
 interface Props {
   projectId: string;
@@ -69,6 +70,7 @@ export const ProjectView = ({ projectId }: Props) => {
                     <CrownIcon /> Upgrade
                   </Link>
                 </Button>
+                <UserButton/>
               </div>
             </div>
             <TabsContent value="preview" className="flex-1 overflow-hidden">

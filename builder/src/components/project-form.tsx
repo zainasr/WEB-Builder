@@ -12,6 +12,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowUp01Icon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useClerk } from "@clerk/nextjs";
+import { err } from "inngest/types";
+
 
 const formSchema = z.object({
   value: z.string()
@@ -25,6 +28,11 @@ const formSchema = z.object({
 
 export const ProjectForm = () => {
   const [isFocused, setIsFocused] = useState(false);
+  const clerk = useClerk();
+
+ 
+  
+
   const router = useRouter();
   const queryClient=useQueryClient()
   const trpc=useTRPC()
@@ -45,7 +53,11 @@ export const ProjectForm = () => {
     },
     
     onError:(error)=>{
+      toast.error(error.message)
       console.error(error)
+      if(error.data?.code === "UNAUTHORIZED"){
+        clerk.redirectToSignIn()
+      }
       toast.error("Failed to send message")
     }
   }));
