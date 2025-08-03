@@ -23,7 +23,7 @@ export const FragmentWeb = ({ fragment }: Props) => {
         },2000)
     }
   return (
-    <div className='h-full w-full flex flex-col'>
+    <div className='w-full flex flex-col h-full'>
         <div className='p-2 border-b bg-sidebar flex items-center gap-x-2'>
             <Button variant="ghost" size="icon" onClick={handleRefresh}>
                 <RefreshCcwIcon className="w-4 h-4" />
@@ -48,13 +48,15 @@ export const FragmentWeb = ({ fragment }: Props) => {
                 <ExternalLinkIcon className="w-4 h-4" />
             </Button>
         </div>
-        <iframe 
-        key={fragmentKey}
-        src={fragment.SandboxUrl} 
-        sandbox="allow-scripts allow-same-origin" 
-        loading='lazy' 
-        className="w-full h-full" 
-        />
+        <div className="flex-1 relative">
+          <iframe 
+            key={fragmentKey}
+            src={fragment.SandboxUrl} 
+            sandbox="allow-scripts allow-same-origin allow-forms" 
+            loading='lazy' 
+            className="w-full h-full absolute inset-0" 
+          />
+        </div>
     </div>
   )
 }

@@ -1,10 +1,11 @@
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Suspense, useEffect, useRef } from "react";
+import {  useEffect, useRef } from "react";
 import { Fragment } from "@/generated/prisma";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MessageCard } from "./message-card";
 import { MessageForm } from "./message-form";
+import { MessageLoading } from "./MessageLoading";
 
 interface Props {
   projectId: string;
@@ -56,12 +57,12 @@ const isLastMessageIsUser=messages.at(-1)?.role==="USER"
               type={message.type}
             />
           ))}
-          {isLastMessageIsUser && <Skeleton className="h-10 w-full" />}
+          {isLastMessageIsUser && <MessageLoading/>}
           <div ref={bottomRef}></div>
         </div>
       </div>
       <div className="relative p-3 pt-1">
-        <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-b from-sidebar to-background/70 pointer-events-none"></div>
+        <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-b from-transparent to-background pointer-events-none"></div>
         <MessageForm projectId={projectId} />
       </div>
     </div>

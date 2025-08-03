@@ -11,8 +11,8 @@ interface UserMessageProps {
 
 const UserMessage = ({ content }: UserMessageProps) => {
   return (
-    <div className="flex justify-end pb-4 pr-2 pt-10">
-      <Card className="rounded-lg bg-muted p-3 shadow-none border-none">
+    <div className="flex justify-end pb-4 pr-2 pl-10">
+      <Card className="rounded-lg bg-muted p-3 shadow-none border-none max-w-[80%] break-words">
         {content}
       </Card>
     </div>
@@ -74,7 +74,7 @@ const AssistantMessage = ({
       <div className="flex items-center gap-2 pl-2 mb-2">
         <Image 
           src="/logo.svg" 
-          alt="Vibe" 
+          alt="code-assistant" 
           width={18} 
           height={18} 
           className="shrink-0" 

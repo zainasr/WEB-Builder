@@ -8,8 +8,9 @@ import TextareaAutosize from "react-textarea-autosize";
 import { useTRPC } from "@/trpc/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowUp01Icon, Loader2 } from "lucide-react";
+import { ArrowUp01Icon, ArrowUpIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { fa } from "zod/v4/locales";
 
 const formSchema = z.object({
   value: z.string()
@@ -48,7 +49,8 @@ export const MessageForm = ({ projectId }: Props) => {
     }
   }));
   const isPending = createMessage.isPending;
-  const isDisabled = isPending || !form.formState.isValid;
+  const showUsage = false
+  const isButtonDisabled = isPending || !form.formState.isValid;
   const onSubmit = async(values: z.infer<typeof formSchema>) => {
     await createMessage.mutateAsync({
       projectId,
@@ -64,7 +66,7 @@ export const MessageForm = ({ projectId }: Props) => {
         className={cn(
           "relative border p-4 pt-1 rounded-xl bg-sidebar dark:bg-sidebar transition-all",
           isFocused && "shadow-xs",
-          form.formState.isSubmitting && "rounded-t-none",
+          showUsage &&"rounded-t-none",
         )}
       >
         <FormField
@@ -96,8 +98,8 @@ export const MessageForm = ({ projectId }: Props) => {
             </kbd>
             &nbsp;to submit
           </div>
-          <Button type="submit" disabled={isDisabled} className="h-8">
-            {isPending ? <Loader2 className="size-4 animate-spin" /> : <ArrowUp01Icon className="size-4" />}
+          <Button type="submit" disabled={isButtonDisabled} className={cn("size-8 rounded-full",isButtonDisabled && "bg-muted-foreground border")}>
+            {isPending ? <Loader2 className="size-4 animate-spin" /> : <ArrowUpIcon className="size-4" />}
           </Button>
         </div>
       </form>
